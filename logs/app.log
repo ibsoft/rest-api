@@ -1,0 +1,53 @@
+[2023-03-16 15:58:30,613] INFO in app: Protected: Got Auth Header Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvdHAiOiI3NTM0MDAiLCJleHAiOjE2Nzg5ODE2MzUsImNsaWVudCI6ImpvaG4ifQ.ywHWYdSzPodiX6BavXC6LKAyaLY08UV2PHDVriFqeUA
+[2023-03-16 15:58:30,613] INFO in app: Protected: Got Token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvdHAiOiI3NTM0MDAiLCJleHAiOjE2Nzg5ODE2MzUsImNsaWVudCI6ImpvaG4ifQ.ywHWYdSzPodiX6BavXC6LKAyaLY08UV2PHDVriFqeUA
+[2023-03-16 15:58:30,613] INFO in app: Protected: Decoded token
+[2023-03-16 15:58:30,614] INFO in app: Protected: Got Expiration Date 1678981635
+[2023-03-16 15:58:30,614] INFO in app: Protected: Got Client john
+[2023-03-16 15:58:30,615] INFO in app: Protected: Got client key from database 
+[2023-03-16 15:58:30,615] INFO in app: Protected: Checking if token expired 1678967910.615237 1678981635
+[2023-03-16 16:01:15,847] INFO in app: Protected: Got Auth Header Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvdHAiOiI3NTM0MDAiLCJleHAiOjE2Nzg5ODE2MzUsImNsaWVudCI6ImpvaG4ifQ.ywHWYdSzPodiX6BavXC6LKAyaLY08UV2PHDVriFqeUA
+[2023-03-16 16:01:15,848] INFO in app: Protected: Got Token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvdHAiOiI3NTM0MDAiLCJleHAiOjE2Nzg5ODE2MzUsImNsaWVudCI6ImpvaG4ifQ.ywHWYdSzPodiX6BavXC6LKAyaLY08UV2PHDVriFqeUA
+[2023-03-16 16:01:15,848] INFO in app: Protected: Decoded token
+[2023-03-16 16:01:15,849] INFO in app: Protected: Got Expiration Date 1678981635
+[2023-03-16 16:01:15,849] INFO in app: Protected: Got Client john
+[2023-03-16 16:01:15,849] INFO in app: Protected: Got client key from database 
+[2023-03-16 16:01:15,849] INFO in app: Protected: Checking if token expired 1678968075.84996 1678981635
+[2023-03-16 16:01:15,850] INFO in app: 1678975275
+[2023-03-16 16:01:15,850] INFO in app: 1678981635
+[2023-03-16 16:01:15,850] INFO in app: Protected: Token Expiration Looks Good! 
+[2023-03-16 16:01:15,850] INFO in app: Protected: Token is valid!
+[2023-03-16 16:01:15,850] INFO in app: Protected: Return data to client!
+[2023-03-16 16:01:15,850] INFO in app: Protected: Closing connection
+[2023-03-16 16:05:45,180] INFO in app: Protected: Got Auth Header Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvdHAiOiI3NTM0MDAiLCJleHAiOjE2Nzg5ODE2MzUsImNsaWVudCI6ImpvaG4ifQ.ywHWYdSzPodiX6BavXC6LKAyaLY08UV2PHDVriFqeUA
+[2023-03-16 16:05:45,180] INFO in app: Protected: Got Token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvdHAiOiI3NTM0MDAiLCJleHAiOjE2Nzg5ODE2MzUsImNsaWVudCI6ImpvaG4ifQ.ywHWYdSzPodiX6BavXC6LKAyaLY08UV2PHDVriFqeUA
+[2023-03-16 16:05:45,180] INFO in app: Protected: Decoded token
+[2023-03-16 16:05:45,181] INFO in app: Protected: Got Expiration Date 1678981635
+[2023-03-16 16:05:45,181] INFO in app: Protected: Got Client john
+[2023-03-16 16:05:45,182] INFO in app: Protected: Got client key from database 
+[2023-03-16 16:05:45,182] INFO in app: Protected: Checking if token expired 1678968345.182563 1678981635
+[2023-03-16 16:06:03,459] INFO in app: Protected: Got Auth Header Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvdHAiOiI3NTM0MDAiLCJleHAiOjE2Nzg5ODE2MzUsImNsaWVudCI6ImpvaG4ifQ.ywHWYdSzPodiX6BavXC6LKAyaLY08UV2PHDVriFqeUA
+[2023-03-16 16:06:03,460] INFO in app: Protected: Got Token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvdHAiOiI3NTM0MDAiLCJleHAiOjE2Nzg5ODE2MzUsImNsaWVudCI6ImpvaG4ifQ.ywHWYdSzPodiX6BavXC6LKAyaLY08UV2PHDVriFqeUA
+[2023-03-16 16:06:03,460] INFO in app: Protected: Decoded token
+[2023-03-16 16:06:03,461] INFO in app: Protected: Got Expiration Date 1678981635
+[2023-03-16 16:06:03,461] INFO in app: Protected: Got Client john
+[2023-03-16 16:06:03,461] INFO in app: Protected: Got client key from database 
+[2023-03-16 16:06:03,462] INFO in app: Protected: Checking if token expired 1678968363.462053 1678981635
+[2023-03-16 16:06:03,462] INFO in app: 1678975563.462187
+[2023-03-16 16:06:03,462] INFO in app: 1678981635
+[2023-03-16 16:06:03,462] INFO in app: Protected: Token Expiration Looks Good! 
+[2023-03-16 16:06:03,462] INFO in app: Protected: Token is valid!
+[2023-03-16 16:06:03,462] INFO in app: Protected: Return data to client!
+[2023-03-16 16:06:03,462] INFO in app: Protected: Closing connection
+[2023-03-16 16:07:53,790] INFO in app: Protected: Got Auth Header Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvdHAiOiI3NTM0MDAiLCJleHAiOjE2Nzg5ODE2MzUsImNsaWVudCI6ImpvaG4ifQ.ywHWYdSzPodiX6BavXC6LKAyaLY08UV2PHDVriFqeUA
+[2023-03-16 16:07:53,791] INFO in app: Protected: Got Token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvdHAiOiI3NTM0MDAiLCJleHAiOjE2Nzg5ODE2MzUsImNsaWVudCI6ImpvaG4ifQ.ywHWYdSzPodiX6BavXC6LKAyaLY08UV2PHDVriFqeUA
+[2023-03-16 16:07:53,791] INFO in app: Protected: Decoded token
+[2023-03-16 16:07:53,792] INFO in app: Protected: Got Expiration Date 1678981635
+[2023-03-16 16:07:53,792] INFO in app: Protected: Got Client john
+[2023-03-16 16:07:53,792] INFO in app: Protected: Got client key from database 
+[2023-03-16 16:07:53,792] INFO in app: Protected: Checking if token expired 1678968473.792846 1678981635
+[2023-03-16 16:07:53,793] INFO in app: 1678975673
+[2023-03-16 16:07:53,793] INFO in app: 1678981635
+[2023-03-16 16:07:53,793] INFO in app: Protected: Token Expiration Looks Good! 
+[2023-03-16 16:07:53,793] INFO in app: Protected: Token is valid!
+[2023-03-16 16:07:53,793] INFO in app: Protected: Return data to client!
+[2023-03-16 16:07:53,793] INFO in app: Protected: Closing connection
