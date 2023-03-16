@@ -10,12 +10,13 @@ import sqlite3
 import json
 from passlib.hash import pbkdf2_sha256
 from configparser import ConfigParser
-import sms_otp
 from flask import g
 import datetime
 import hmac
 import hashlib
 import pytz
+import calendar
+import time
 
 
 app = Flask(__name__)
@@ -141,18 +142,20 @@ users = json.loads(users_json)
 def login():
     auth = request.authorization
   
-    #Set Token Expiration time  
-    expiration_time = datetime.datetime.now() + datetime.timedelta(seconds=120)
-    
-    #Mask user password
-    masked_password = "*" * (len(auth.password) - 4) + auth.password[-4:]
-    
-    app.logger.info('Got Authentication request')
+
     
     if request.method == 'POST':
+        #Set Token Expiration time  
+        expiration_time = datetime.datetime.utcnow() + datetime.timedelta(seconds=60) 
+        
         if not auth or not auth.username or not auth.password:
             app.logger.info('Login: Could not verify'+ auth.username + ' ' + auth.password)
             return jsonify({'message': 'Could not verify'}), 401
+        
+        #Mask user password
+        masked_password = "*" * (len(auth.password) - 4) + auth.password[-4:]
+        
+        app.logger.info('Got Authentication request')
             
         # Validate the user credentials
         if auth.username in users and validate_user(os.path.join(sys.path[0], 'users.db'), auth.username, auth.password):
@@ -175,6 +178,7 @@ def login():
                        
             otp = generate_totp(otp_key.encode())
             #token = jwt.encode({'otp': otp}, client_token)
+            app.logger.info('Login: Setting expiration timestamp '+str(expiration_time.timestamp()))
             token = jwt.encode({'otp': otp, 'exp': expiration_time, 'client': auth.username}, secret_key)
             app.logger.info('Login: Generated token for user '+ auth.username + ' token: '+ token )
             app.logger.info('Login: Closing connection')
@@ -237,27 +241,19 @@ def protected():
                 
                 otp_key = result[0]
         
-        app.logger.info('Protected: Checking if token expired '+ str(datetime.datetime.utcnow().timestamp()) + ' ' + str(expiration_time))
+        app.logger.info('Protected: Checking if token expired '+ str(datetime.datetime.now().timestamp()) + ' ' + str(expiration_time))
         
-        # Create a timezone object for Europe/Athens
-        timezone = pytz.timezone('Europe/Athens')
-
-        # Get the current time with timezone info
-        current_time = datetime.datetime.now(timezone)
-
-        # Get the timestamp in seconds
-        timestamp = int(current_time.timestamp())
-
-        
-        app.logger.info(timestamp)
-        app.logger.info(expiration_time)
+        app.logger.info(datetime.datetime.now())
+        app.logger.info(datetime.datetime.fromtimestamp(expiration_time))
         
         # Check if token is expired
         if datetime.datetime.now().timestamp() > expiration_time:
             app.logger.error('Protected: Token Expired!')
             return jsonify({'message': 'Token expired'}), 401
+        
         app.logger.info('Protected: Token Expiration Looks Good! ')
         app.logger.info('Protected: Token is valid!')
+        
         # Token is valid
         data = generate_totp(otp_key.encode())
         app.logger.info('Protected: Return data to client!')
@@ -266,7 +262,7 @@ def protected():
         
     except jwt.InvalidTokenError as e:
         print(e)
-        
+
         app.logger.error('Protected: Invalid Token: ' + str(e))
         return jsonify({'message': 'Invalid token'}), 401
 
