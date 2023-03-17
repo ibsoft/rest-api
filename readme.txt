@@ -38,7 +38,9 @@ Disadvantage of Bearer tokens
 The downside to Bearer tokens is that there is nothing preventing other apps from using a Bearer token if it can get access to it. This is a common criticism of OAuth 2.0, although most providers only use Bearer tokens anyway. Under normal circumstances, when applications properly protect the access tokens under their control, this is not a problem, although technically it is less secure. If your service requires a more secure approach, you can a different access token type that may meet your security requirements.
 
 
-
+curl -X POST -u john:password123 http://localhost:5000/login
+#curl -X GET http://localhost:5000/protected -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvdHAiOiI0MzU2ODQiLCJleHAiOjE2Nzg5NjA3MjZ9.BXmwfp8afjMMOL-EuQWeWyZq7P4UIX7VfDmHyNaL_aY
+#gammu -c /etc/gammu-smsdrc sendsms TEXT 6977456031 -text "'lalakis'"
 
 
 def verify_otp(key, otp):
