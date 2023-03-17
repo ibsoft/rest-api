@@ -1,7 +1,7 @@
 import logging
 import os
 import sys
-from flask import Flask, request, jsonify
+from flask import Flask, render_template, request, jsonify
 import jwt
 import time
 import hmac
@@ -15,13 +15,15 @@ import datetime
 import hmac
 import hashlib
 import pytz
-import calendar
 import time
+
+from providers.mssql_provider import SqlToJson
+from providers.sms_provider import RemoteSSH
 
 
 app = Flask(__name__)
 
-tz = pytz.timezone('Europe/Athens')
+
 
 
 @app.before_first_request
@@ -50,23 +52,13 @@ def before_first_request():
 
 
 # Parsing Config file
-config = ConfigParser()
+config = ConfigParser(interpolation=None)
 config.read(os.path.join(sys.path[0], 'appconf.conf'))
 
-print(config.sections())
+
+tz = pytz.timezone('Europe/Athens')
     
 app.config['secret_key'] = config.get('APP', 'app_key')
-
-# Set expiration time to 1 minute from now
-#expiration_time = time.time() + 120
-
-# Set expiration time to 1 day from now
-#expiration_time = datetime.datetime.utcnow() + datetime.timedelta(days=1)
-
-
-#expiration_time = datetime.datetime.now() + datetime.timedelta(seconds=120)
-
-
 
 ######################################################################
 
@@ -75,7 +67,13 @@ app.config['secret_key'] = config.get('APP', 'app_key')
 #result = ssh.send_command('ls -l')
 
 
-def generate_totp(key, interval=30):
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+
+
+def generate_totp(key, interval=60):
     """Generate a time-based one-time password (TOTP)"""
     curr_time = int(time.time())
     curr_interval = curr_time // interval
@@ -177,9 +175,11 @@ def login():
                 otp_key = result[0]
                        
             otp = generate_totp(otp_key.encode())
-            #token = jwt.encode({'otp': otp}, client_token)
+
             app.logger.info('Login: Setting expiration timestamp '+str(expiration_time.timestamp()))
+            
             token = jwt.encode({'otp': otp, 'exp': expiration_time, 'client': auth.username}, secret_key)
+            
             app.logger.info('Login: Generated token for user '+ auth.username + ' token: '+ token )
             app.logger.info('Login: Closing connection')
             
@@ -188,83 +188,329 @@ def login():
             print("Invalid user")
             app.logger.error('Login: Invalid credentials '+ auth.username)
             return jsonify({'message': 'Invalid credentials'}), 401
-
-
-
-# Function to add padding characters
-def fix_padding(token):
-    # Calculate the number of padding characters required
-    padding_length = len(token) % 4
-    padding = '=' * padding_length
     
-    # Add the padding characters to the token
-    return token + padding
+    return render_template("404.html")
 
+# OTP Provider
 
-
-
-@app.route('/protected', methods=['GET'])
+@app.route('/provider/otp', methods=['GET'])
 def protected():
     # Get token from request headers
     auth_header = request.headers.get('Authorization')
     token = None
     if auth_header:
-        app.logger.info('Protected: Got Auth Header '+ auth_header )
+        app.logger.info('OTPProvider: Got Auth Header '+ auth_header )
         token = auth_header.split(" ")[1]
-        app.logger.info('Protected: Got Token '+ token )
+        app.logger.info('OTPProvider: Got Token '+ token )
+    else:
+        return render_template("404.html")
     # Check if token exists and is not empty
     if not token:
-        app.logger.error('Protected: Token missing')
+        app.logger.error('OTPProvider: Token missing')
         return jsonify({'message': 'Missing token'}), 401
     
     try:
         # Decode token and get expiration time
         secret_key = config.get('SECRET_KEY', 'key')
-        app.logger.info('Protected: Decoded token')
+        app.logger.info('OTPProvider: Decoding token')
         decoded = jwt.decode(token, secret_key, algorithms=['HS256'])
         expiration_time = decoded.get('exp')
-        app.logger.info('Protected: Got Expiration Date '+ str(expiration_time ))
+        app.logger.info('OTPProvider: Got Expiration Date '+ str(expiration_time ))
         #Get client name
         client = decoded.get('client')
-        app.logger.info('Protected: Got Client '+ str(client) )
+        app.logger.info('OTPProvider: Got Client '+ str(client) )
         
         
         with sqlite3.connect(os.path.join(sys.path[0], 'users.db')) as con:
                 cur = con.cursor()
                 cur.execute("SELECT otp_key FROM users WHERE username=?", (client,))
                 result = cur.fetchone()
-                app.logger.info('Protected: Got client key from database ')
+                app.logger.info('OTPProvider: Got client key from database ')
                 
                 if not result:
-                    app.logger.error('Protected: User missconfiguration')
+                    app.logger.error('OTPProvider: User missconfiguration')
                     return jsonify({'message': 'User missconfigured'}), 401
                 
                 otp_key = result[0]
         
-        app.logger.info('Protected: Checking if token expired '+ str(datetime.datetime.now().timestamp()) + ' ' + str(expiration_time))
+        app.logger.info('OTPProvider: Checking if token expired '+ str(datetime.datetime.now().timestamp()) + ' ' + str(expiration_time))
         
-        app.logger.info(datetime.datetime.now())
+        now = datetime.datetime.now()
+        app.logger.info(now.strftime("%Y-%m-%d %H:%M:%S"))
         app.logger.info(datetime.datetime.fromtimestamp(expiration_time))
         
         # Check if token is expired
         if datetime.datetime.now().timestamp() > expiration_time:
-            app.logger.error('Protected: Token Expired!')
+            app.logger.error('OTPProvider: Token Expired!')
             return jsonify({'message': 'Token expired'}), 401
         
-        app.logger.info('Protected: Token Expiration Looks Good! ')
-        app.logger.info('Protected: Token is valid!')
+        app.logger.info('OTPProvider: Token Expiration Looks Good! ')
+        app.logger.info('OTPProvider: Token is valid!')
         
         # Token is valid
         data = generate_totp(otp_key.encode())
-        app.logger.info('Protected: Return data to client!')
-        app.logger.info('Protected: Closing connection')
+        app.logger.info('OTPProvider: Return data to client!')
+        app.logger.info('OTPProvider: Closing connection')
         return jsonify({'data': data}), 200
         
     except jwt.InvalidTokenError as e:
         print(e)
 
-        app.logger.error('Protected: Invalid Token: ' + str(e))
+        app.logger.error('OTPProvider: Invalid Token: ' + str(e))
         return jsonify({'message': 'Invalid token'}), 401
+
+
+    
+# MS SQL Provider
+
+@app.route('/provider/mssql', methods=['GET'])
+def mssql():
+    # Get token from request headers
+    auth_header = request.headers.get('Authorization')
+    token = None
+    
+    if auth_header:
+        app.logger.info('SQLProvider: Got Auth Header '+ auth_header )
+        token = auth_header.split(" ")[1]
+        app.logger.info('SQLProvider: Got Token '+ token )
+    else:
+        return render_template("404.html")
+    # Check if token exists and is not empty
+    if not token:
+        app.logger.error('SQLProvider: Token missing')
+        return jsonify({'message': 'Missing token'}), 401
+    
+    try:
+        # Decode token and get expiration time
+        secret_key = config.get('SECRET_KEY', 'key')
+        app.logger.info('SQLProvider: Decoding token')
+        decoded = jwt.decode(token, secret_key, algorithms=['HS256'])
+        expiration_time = decoded.get('exp')
+        app.logger.info('SQLProvider: Got Expiration Date '+ str(expiration_time ))
+        #Get client name
+        client = decoded.get('client')
+        app.logger.info('SQLProvider: Got Client '+ str(client) )
+        
+        
+        with sqlite3.connect(os.path.join(sys.path[0], 'users.db')) as con:
+                cur = con.cursor()
+                cur.execute("SELECT otp_key,sql_query FROM users WHERE username=?", (client,))
+                result = cur.fetchone()
+                app.logger.info('SQLProvider: Got client key from database ')
+                
+                if not result:
+                    app.logger.error('SQLProvider: User missconfiguration')
+                    return jsonify({'message': 'User missconfigured'}), 401
+                
+                otp_key = result[0]
+                sql_query = result[1]
+        
+        app.logger.info('SQLProvider: Checking if token expired '+ str(datetime.datetime.now().timestamp()) + ' ' + str(expiration_time))
+        
+        now = datetime.datetime.now()
+        app.logger.info(now.strftime("%Y-%m-%d %H:%M:%S"))
+        app.logger.info(datetime.datetime.fromtimestamp(expiration_time))
+        
+        # Check if token is expired
+        if datetime.datetime.now().timestamp() > expiration_time:
+            app.logger.error('SQLProvider: Token Expired!')
+            return jsonify({'message': 'Token expired'}), 401
+        
+        app.logger.info('SQLProvider: Token Expiration Looks Good! ')
+        app.logger.info('SQLProvider: Token is valid!')
+        
+        # Token is valid
+        data = generate_totp(otp_key.encode())
+        app.logger.info('SQLProvider: Return data to client!')
+        app.logger.info('SQLProvider: Closing connection')
+        
+
+        
+        # Create an instance of the SqlToJson class
+        conn = SqlToJson(config.get(client, 'dbhost').replace("\"", ""), config.get(client, 'username').replace("\"", ""), config.get(client, 'password').replace("\"", ""), config.get(client, 'database').replace("\"", ""))
+
+        # Execute a SQL query and get the results as JSON
+        json_results = conn.run_query(format(sql_query))
+
+        # Print the JSON output
+        parsed_result = json.loads(json_results)
+        print(parsed_result)
+
+        
+        return json_results, 200
+        
+    except jwt.InvalidTokenError as e:
+        print(e)
+
+        app.logger.error('SQLProvider: Invalid Token: ' + str(e))
+        return jsonify({'message': 'Invalid token'}), 401
+    
+    
+# MYSQL Provider
+
+@app.route('/provider/mysql', methods=['GET'])
+def mysql():
+    # Get token from request headers
+    auth_header = request.headers.get('Authorization')
+    token = None
+    
+    if auth_header:
+        app.logger.info('MYSQLProvider: Got Auth Header '+ auth_header )
+        token = auth_header.split(" ")[1]
+        app.logger.info('MYSQLProvider: Got Token '+ token )
+    else:
+        return render_template("404.html")
+    # Check if token exists and is not empty
+    if not token:
+        app.logger.error('MYSQLProvider: Token missing')
+        return jsonify({'message': 'Missing token'}), 401
+    
+    try:
+        # Decode token and get expiration time
+        secret_key = config.get('SECRET_KEY', 'key')
+        app.logger.info('MYSQLProvider: Decoding token')
+        decoded = jwt.decode(token, secret_key, algorithms=['HS256'])
+        expiration_time = decoded.get('exp')
+        app.logger.info('MYSQLProvider: Got Expiration Date '+ str(expiration_time ))
+        #Get client name
+        client = decoded.get('client')
+        app.logger.info('MYSQLProvider: Got Client '+ str(client) )
+        
+        
+        with sqlite3.connect(os.path.join(sys.path[0], 'users.db')) as con:
+                cur = con.cursor()
+                cur.execute("SELECT otp_key,sql_query FROM users WHERE username=?", (client,))
+                result = cur.fetchone()
+                app.logger.info('SQLProvider: Got client key from database ')
+                
+                if not result:
+                    app.logger.error('SQLProvider: User missconfiguration')
+                    return jsonify({'message': 'User missconfigured'}), 401
+                
+                otp_key = result[0]
+                sql_query = result[1]
+        
+        app.logger.info('MYSQLProvider: Checking if token expired '+ str(datetime.datetime.now().timestamp()) + ' ' + str(expiration_time))
+        
+        now = datetime.datetime.now()
+        app.logger.info(now.strftime("%Y-%m-%d %H:%M:%S"))
+        app.logger.info(datetime.datetime.fromtimestamp(expiration_time))
+        
+        # Check if token is expired
+        if datetime.datetime.now().timestamp() > expiration_time:
+            app.logger.error('MYSQLProvider: Token Expired!')
+            return jsonify({'message': 'Token expired'}), 401
+        
+        app.logger.info('MYSQLProvider: Token Expiration Looks Good! ')
+        app.logger.info('MYSQLProvider: Token is valid!')
+        
+        # Token is valid
+        data = generate_totp(otp_key.encode())
+        app.logger.info('MYSQLProvider: Return data to client!')
+        app.logger.info('MYSQLProvider: Closing connection')
+        
+
+        
+        # Create an instance of the SqlToJson class
+        conn = SqlToJson(config.get(client, 'dbhost').replace("\"", ""), config.get(client, 'username').replace("\"", ""), config.get(client, 'password').replace("\"", ""), config.get(client, 'database').replace("\"", ""))
+
+        # Execute a SQL query and get the results as JSON
+        json_results = conn.run_query(format(sql_query))
+
+        # Print the JSON output
+        parsed_result = json.loads(json_results)
+        print(parsed_result)
+
+        
+        return json_results, 200
+        
+    except jwt.InvalidTokenError as e:
+        print(e)
+
+        app.logger.error('MYSQLProvider: Invalid Token: ' + str(e))
+        return jsonify({'message': 'Invalid token'}), 401
+    
+    
+# SMS Provider
+
+@app.route('/provider/sms', methods=['GET'])
+def sms():
+    # Get token from request headers
+    auth_header = request.headers.get('Authorization')
+    token = None
+    
+    if auth_header:
+        app.logger.info('SMSProvider: Got Auth Header '+ auth_header )
+        token = auth_header.split(" ")[1]
+        app.logger.info('SMSProvider: Got Token '+ token )
+    else:
+        return render_template("404.html")
+    # Check if token exists and is not empty
+    if not token:
+        app.logger.error('SMSProvider: Token missing')
+        return jsonify({'message': 'Missing token'}), 401
+    
+    try:
+        # Decode token and get expiration time
+        secret_key = config.get('SECRET_KEY', 'key')
+        app.logger.info('SMSProvider: Decoding token')
+        decoded = jwt.decode(token, secret_key, algorithms=['HS256'])
+        expiration_time = decoded.get('exp')
+        app.logger.info('SMSProvider: Got Expiration Date '+ str(expiration_time ))
+        #Get client name
+        client = decoded.get('client')
+        app.logger.info('SMSProvider: Got Client '+ str(client) )
+        
+        
+        with sqlite3.connect(os.path.join(sys.path[0], 'users.db')) as con:
+                cur = con.cursor()
+                cur.execute("SELECT otp_key,phonenumber FROM users WHERE username=?", (client,))
+                result = cur.fetchone()
+                app.logger.info('SMSProvider: Got client key from database ')
+                
+                if not result:
+                    app.logger.error('SMSProvider: User missconfiguration')
+                    return jsonify({'message': 'User missconfigured'}), 401
+                
+                otp_key = result[0]
+                phone = result[1]
+        
+        app.logger.info('SMSProvider: Checking if token expired '+ str(datetime.datetime.now().timestamp()) + ' ' + str(expiration_time))
+        
+        now = datetime.datetime.now()
+        app.logger.info(now.strftime("%Y-%m-%d %H:%M:%S"))
+        app.logger.info(datetime.datetime.fromtimestamp(expiration_time))
+        
+        # Check if token is expired
+        if datetime.datetime.now().timestamp() > expiration_time:
+            app.logger.error('SMSProvider: Token Expired!')
+            return jsonify({'message': 'Token expired'}), 401
+        
+        app.logger.info('SMSProvider: Token Expiration Looks Good! ')
+        app.logger.info('SMSProvider: Token is valid!')
+        
+        # Token is valid
+        data = generate_totp(otp_key.encode())
+        app.logger.info('SMSProvider: Return data to client!')
+        app.logger.info('SMSProvider: Closing connection')
+        
+        # Send OTP with SMS
+        try:
+            ssh = RemoteSSH(config.get('SMS_GATEWAY', 'gateway'), 22, config.get('SMS_GATEWAY', 'username'), config.get('SMS_GATEWAY', 'password'))
+            result = ssh.send_command('sudo /usr/bin/gammu -c /etc/gammu-smsdrc sendsms TEXT '+str(phone)+' -text '+str(data)+' > /dev/null 2>&1')
+            print(result)
+        except Exception as e:
+            print(e)
+        
+        return "OK", 200
+        
+    except jwt.InvalidTokenError as e:
+        print(e)
+
+        app.logger.error('SMSProvider: Invalid Token: ' + str(e))
+        return jsonify({'message': 'Invalid token'}), 401
+    
+
 
 if __name__ == '__main__':
     app.run(debug=True)

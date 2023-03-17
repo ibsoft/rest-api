@@ -1,0 +1,25 @@
+[gammu]
+device = B0:5C:E5:ED:17:C1
+model = NAUTO
+connection = bluephonet
+synchronizetime = yes
+logfile = /var/log/gammu.log
+logformat = textall
+use_locking = yes
+gammuloc = yes
+
+[smsd]
+service = files
+logfile = /var/log/smsd.log
+debuglevel = 3
+PIN = 1111
+ReceiveFrequency = 1
+DeliveryReport = log
+inboxpath = /var/spool/gammu/inbox/
+outboxpath = /var/spool/gammu/outbox/
+sendsmspath = /var/spool/gammu/send/
+errorsmspath = /var/spool/gammu/error/
+CheckSecurity = 0
+RunOnRecieve = /var/spool/gammu/mail_wrapper.sh
+[include_numbers]
+number1 = 6937914659

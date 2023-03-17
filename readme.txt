@@ -1,7 +1,3 @@
-This is an example of a REST API - returning to clients an OTP 4 digit code.
-
-
-
 def verify_otp(key, otp):
     """Verify a one-time password (OTP) against a secret key"""
     
