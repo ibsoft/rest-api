@@ -1,21 +1,20 @@
 import logging
 import os
 import sys
-from flask import Flask, render_template, request, jsonify
 import jwt
 import time
 import hmac
 import hashlib
 import sqlite3
 import json
-from passlib.hash import pbkdf2_sha256
-from configparser import ConfigParser
-from flask import g
 import datetime
 import hmac
 import hashlib
 import pytz
 import time
+from flask import Flask, render_template, request, jsonify, g
+from passlib.hash import pbkdf2_sha256
+from configparser import ConfigParser
 
 from providers.mssql_provider import SqlToJson
 from providers.sms_provider import RemoteSSH
@@ -62,9 +61,6 @@ app.config['secret_key'] = config.get('APP', 'app_key')
 
 ######################################################################
 
-# Send OTP with SMS
-#ssh = sms_otp.RemoteSSH('example.com', 22, 'username', 'password')
-#result = ssh.send_command('ls -l')
 
 
 @app.errorhandler(404)
@@ -147,7 +143,7 @@ def login():
         expiration_time = datetime.datetime.utcnow() + datetime.timedelta(seconds=60) 
         
         if not auth or not auth.username or not auth.password:
-            app.logger.info('Login: Could not verify'+ auth.username + ' ' + auth.password)
+            app.logger.info('Authorization: Could not verify'+ auth.username + ' ' + auth.password)
             return jsonify({'message': 'Could not verify'}), 401
         
         #Mask user password
@@ -159,7 +155,7 @@ def login():
         if auth.username in users and validate_user(os.path.join(sys.path[0], 'users.db'), auth.username, auth.password):
             print("Valid user")
 
-            app.logger.info('Login: User validated '+ auth.username +' '+ masked_password)
+            app.logger.info('Authorization: User validated '+ auth.username +' '+ masked_password)
 
             secret_key =  config.get('SECRET_KEY', 'key')
             
@@ -167,26 +163,26 @@ def login():
                 cur = con.cursor()
                 cur.execute("SELECT otp_key FROM users WHERE username=?", (auth.username,))
                 result = cur.fetchone()
-                app.logger.info('Login: Got user OTP Key drom database')
+                app.logger.info('Authorization: Got user OTP Key drom database')
                 if not result:
-                    app.logger.warning('Login: Cannot get OTP from database for user '+ auth.username)
+                    app.logger.warning('Authorization: Cannot get OTP from database for user '+ auth.username)
                     return jsonify({'message': 'User missconfigured'}), 401
                 
                 otp_key = result[0]
                        
             otp = generate_totp(otp_key.encode())
 
-            app.logger.info('Login: Setting expiration timestamp '+str(expiration_time.timestamp()))
+            app.logger.info('Authorization: Setting expiration timestamp '+str(expiration_time.timestamp()))
             
             token = jwt.encode({'otp': otp, 'exp': expiration_time, 'client': auth.username}, secret_key)
             
-            app.logger.info('Login: Generated token for user '+ auth.username + ' token: '+ token )
-            app.logger.info('Login: Closing connection')
+            app.logger.info('Authorization: Generated token for user '+ auth.username + ' token: '+ token )
+            app.logger.info('Authorization: Closing connection')
             
             return jsonify({'token': token}), 200
         else:
             print("Invalid user")
-            app.logger.error('Login: Invalid credentials '+ auth.username)
+            app.logger.error('Authorization: Invalid credentials '+ auth.username)
             return jsonify({'message': 'Invalid credentials'}), 401
     
     return render_template("404.html")
