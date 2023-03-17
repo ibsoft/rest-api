@@ -1,0 +1,13 @@
+[Unit]
+Description=Gunicorn instance to serve rest-api-otp 
+After=network.target
+
+[Service]
+User=root
+Group=www-data
+WorkingDirectory=/var/www/html/rest-api-otp
+Environment="PATH=/var/www/html/rest-api-otp/venv/bin"
+ExecStart=/var/www/html/rest-api-otp/venv/bin/gunicorn --workers 3 --bind unix:rest-api-otp.sock -m 007 wsgi:app
+
+[Install]
+WantedBy=multi-user.target
